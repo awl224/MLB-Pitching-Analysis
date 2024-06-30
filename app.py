@@ -7,7 +7,7 @@ from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
 import matplotlib.patches as patches
 
-import pandas
+import pandas as pd
 
 app_ui = ui.page_fluid(
     ui.card(
@@ -15,26 +15,34 @@ app_ui = ui.page_fluid(
         # ui.input_select("var", "Select variable here", choices=list(df.columns)),
         # ui.panel_main(ui.output_plot("plot")),
         # pitch location by pitcher
-        ui.input_selectize(
-            "selected_pitcher",
-            "Select pitcher here",
-            choices=sorted(df["pitcher_name"].unique().tolist()),
+        # Pitcher strike zone plot
+        ui.card(
+            ui.input_selectize(
+                "selected_pitcher",
+                "Select pitcher",
+                choices=sorted(df["pitcher_name"].unique().tolist()),
+            ),
+            ui.input_selectize(
+                "selected_pitcher_opponents",
+                "Select batter(s) faced",
+                choices=[],
+                multiple=True,
+            ),
+            ui.panel_main(ui.output_plot("strike_zone_plot_pitcher")),
         ),
-        ui.panel_main(ui.output_plot("strike_zone_plot_pitcher")),
-        ui.input_selectize(
-            "selected_batter",
-            "Select batter here",
-            choices=sorted(df["batter_name"].unique().tolist()),
+        ui.card(
+            ui.input_selectize(
+                "selected_batter",
+                "Select batter",
+                choices=sorted(df["batter_name"].unique().tolist()),
+            ),
+            ui.input_selectize(
+                "selected_outcome",
+                "Select pitch outcome",
+                choices=sorted(df["events"].dropna().unique().tolist()),
+            ),
+            ui.panel_main(ui.output_plot("strike_zone_plot_batter")),
         ),
-        ui.input_selectize(
-            "selected_outcome",
-            "Select pitch outcome here",
-            choices=sorted(df["events"].dropna().unique().tolist()),
-        ),
-        ui.panel_main(ui.output_plot("strike_zone_plot_batter")),
-        # str(df["plate_x"].describe()),
-        # str(df["plate_z"].describe()),
-        # df.head(),
     )
 )
 
@@ -75,15 +83,48 @@ def server(input: Inputs, output: Outputs, session: Session):
         ax.add_patch(strike_zone)
         return fig, ax
 
+    @reactive.Calc
+    def batters_faced():
+        if input.selected_pitcher():
+            return sorted(
+                df[df["pitcher_name"] == input.selected_pitcher()]["batter_name"]
+                .unique()
+                .tolist()
+            )
+
+    @reactive.Effect
+    def update_pitcher_opponents():
+        ui.update_selectize("selected_pitcher_opponents", choices=batters_faced())
+
+    @reactive.Calc
+    def pitcher_pitches_filtered():
+        print(df.shape[0])
+        filter_criteria = {
+            "pitcher_name": input.selected_pitcher(),
+            "batter_name": input.selected_pitcher_opponents(),
+        }
+        compound_condition = pd.Series([True] * len(df), index=df.index)
+        for column, filter in filter_criteria.items():
+            if filter:
+                if isinstance(filter, str):
+                    condition = df[column] == filter
+                else:
+                    condition = df[column].isin(filter)
+                compound_condition &= condition
+        filtered_pitches = df[compound_condition]
+        return filtered_pitches
+
     @output
     @render.plot
     def strike_zone_plot_pitcher():
         fig, ax = create_strike_zone()
-        data = df[df["pitcher_name"] == input.selected_pitcher()][
-            ["plate_x", "plate_z"]
-        ].dropna()
-        ax.scatter(data["plate_x"], data["plate_z"], s=1)  # Smaller dot size
+        data = pitcher_pitches_filtered()
+        labels, pitch_types = np.unique(data["pitch_type"], return_inverse=True)
+        scatter = ax.scatter(
+            data["plate_x"], data["plate_z"], c=pitch_types, s=3, marker="o", cmap="Dark2"
+        )
         ax.set_title(f"Pitch Locations of {input.selected_pitcher()}")
+        ax.legend(scatter.legend_elements()[0],labels)
 
     @output
     @render.plot
