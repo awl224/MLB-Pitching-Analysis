@@ -42,3 +42,5 @@ df = pd.merge(pitcher_df, batter_df, on="batter")
 
 # Check that all pitches had a valid batter
 #print(df.shape[0] == pitcher_df.shape[0])
+
+#print(df["sz_top"].mean())
