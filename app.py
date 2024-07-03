@@ -10,40 +10,63 @@ import matplotlib.patches as patches
 import pandas as pd
 
 app_ui = ui.page_fluid(
+    ui.panel_title("MLB Statcast Pitch Analysis", "Pitch Analysis"),
+    # histogram
+    # ui.input_select("var", "Select variable here", choices=list(df.columns)),
+    # ui.panel_main(ui.output_plot("plot")),
+    # pitch location by pitcher
+    # Pitcher strike zone plot
     ui.card(
-        # histogram
-        # ui.input_select("var", "Select variable here", choices=list(df.columns)),
-        # ui.panel_main(ui.output_plot("plot")),
-        # pitch location by pitcher
-        # Pitcher strike zone plot
-        ui.card(
-            ui.input_selectize(
-                "selected_pitcher",
-                "Select pitcher",
-                choices=sorted(df["pitcher_name"].unique().tolist()),
+        ui.row(
+            ui.column(
+                6,
+                ui.input_selectize(
+                    "selected_pitcher",
+                    "Select pitcher",
+                    choices=sorted(df["pitcher_name"].unique().tolist()),
+                ),
+                ui.input_selectize(
+                    "selected_pitcher_opponents",
+                    "Select batter(s) faced",
+                    choices=[],
+                    multiple=True,
+                ),
+                ui.input_selectize(
+                    "selected_event_pitcher",
+                    "Select pitch outcome (event)",
+                    choices=sorted(df["events"].dropna().unique().tolist()),
+                    multiple=True,
+                ),
+                ui.input_selectize(
+                    "selected_description_pitcher",
+                    "Select pitch outcome (description)",
+                    choices=sorted(df["description"].dropna().unique().tolist()),
+                    multiple=True,
+                ),
             ),
-            ui.input_selectize(
-                "selected_pitcher_opponents",
-                "Select batter(s) faced",
-                choices=[],
-                multiple=True,
+            ui.column(6, ui.output_plot("strike_zone_plot_pitcher")),
+            style="margin-left: 10%; margin-right: 10%; max-width: 80%;",
+        )
+    ),
+    ui.card(
+        ui.row(
+            ui.column(
+                6,
+                ui.input_selectize(
+                    "selected_batter",
+                    "Select batter",
+                    choices=sorted(df["batter_name"].unique().tolist()),
+                ),
+                ui.input_selectize(
+                    "selected_outcome_batter",
+                    "Select pitch outcome",
+                    choices=sorted(df["events"].dropna().unique().tolist()),
+                ),
             ),
-            ui.panel_main(ui.output_plot("strike_zone_plot_pitcher")),
+            ui.column(6, ui.output_plot("strike_zone_plot_batter")),
+            style="margin-left: 10%; margin-right: 10%; max-width: 80%;",
         ),
-        ui.card(
-            ui.input_selectize(
-                "selected_batter",
-                "Select batter",
-                choices=sorted(df["batter_name"].unique().tolist()),
-            ),
-            ui.input_selectize(
-                "selected_outcome",
-                "Select pitch outcome",
-                choices=sorted(df["events"].dropna().unique().tolist()),
-            ),
-            ui.panel_main(ui.output_plot("strike_zone_plot_batter")),
-        ),
-    )
+    ),
 )
 
 
@@ -102,6 +125,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         filter_criteria = {
             "pitcher_name": input.selected_pitcher(),
             "batter_name": input.selected_pitcher_opponents(),
+            "events": input.selected_event_pitcher(),
+            "description": input.selected_description_pitcher(),
         }
         compound_condition = pd.Series([True] * len(df), index=df.index)
         for column, filter in filter_criteria.items():
@@ -121,10 +146,15 @@ def server(input: Inputs, output: Outputs, session: Session):
         data = pitcher_pitches_filtered()
         labels, pitch_types = np.unique(data["pitch_type"], return_inverse=True)
         scatter = ax.scatter(
-            data["plate_x"], data["plate_z"], c=pitch_types, s=3, marker="o", cmap="Dark2"
+            data["plate_x"],
+            data["plate_z"],
+            c=pitch_types,
+            s=3,
+            marker="o",
+            cmap="Dark2",
         )
         ax.set_title(f"Pitch Locations of {input.selected_pitcher()}")
-        ax.legend(scatter.legend_elements()[0],labels)
+        ax.legend(scatter.legend_elements()[0], labels)
 
     @output
     @render.plot
@@ -132,11 +162,11 @@ def server(input: Inputs, output: Outputs, session: Session):
         plt, ax = create_strike_zone()
         data = df[
             (df["batter_name"] == input.selected_batter())
-            & (df["events"] == input.selected_outcome())
+            & (df["events"] == input.selected_outcome_batter())
         ][["plate_x", "plate_z"]].dropna()
         ax.scatter(data["plate_x"], data["plate_z"], s=1)
         ax.set_title(
-            f"Pitch Location of {input.selected_batter()} That Resulted in {input.selected_outcome()}"
+            f"Pitch Location of {input.selected_batter()} That Resulted in {input.selected_outcome_batter()}"
         )
 
 
