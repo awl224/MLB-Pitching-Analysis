@@ -24,6 +24,7 @@ app_ui = ui.page_fluid(
                     "selected_pitcher",
                     "Select pitcher",
                     choices=sorted(df["pitcher_name"].unique().tolist()),
+                    multiple=True,
                 ),
                 ui.input_selectize(
                     "selected_pitcher_opponents",
@@ -47,25 +48,6 @@ app_ui = ui.page_fluid(
             ui.column(6, ui.output_plot("strike_zone_plot_pitcher")),
             style="margin-left: 10%; margin-right: 10%; max-width: 80%;",
         )
-    ),
-    ui.card(
-        ui.row(
-            ui.column(
-                6,
-                ui.input_selectize(
-                    "selected_batter",
-                    "Select batter",
-                    choices=sorted(df["batter_name"].unique().tolist()),
-                ),
-                ui.input_selectize(
-                    "selected_outcome_batter",
-                    "Select pitch outcome",
-                    choices=sorted(df["events"].dropna().unique().tolist()),
-                ),
-            ),
-            ui.column(6, ui.output_plot("strike_zone_plot_batter")),
-            style="margin-left: 10%; margin-right: 10%; max-width: 80%;",
-        ),
     ),
 )
 
@@ -128,6 +110,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             "events": input.selected_event_pitcher(),
             "description": input.selected_description_pitcher(),
         }
+        if all(not criteria for criteria in filter_criteria.values()):
+            return None
         compound_condition = pd.Series([True] * len(df), index=df.index)
         for column, filter in filter_criteria.items():
             if filter:
@@ -144,18 +128,25 @@ def server(input: Inputs, output: Outputs, session: Session):
     def strike_zone_plot_pitcher():
         fig, ax = create_strike_zone()
         data = pitcher_pitches_filtered()
-        labels, pitch_types = np.unique(data["pitch_type"], return_inverse=True)
-        scatter = ax.scatter(
-            data["plate_x"],
-            data["plate_z"],
-            c=pitch_types,
-            s=3,
-            marker="o",
-            cmap="Dark2",
-        )
-        ax.set_title(f"Pitch Locations of {input.selected_pitcher()}")
-        ax.legend(scatter.legend_elements()[0], labels)
+        if data is None:
+            ax.text(0, 4, "Please select a filter", ha='center', va='center')
+            return
+        if data.empty:
+            ax.text(0, 4, "No such pitch on record", ha='center', va='center')
+        else:
+            labels, pitch_types = np.unique(data["pitch_type"], return_inverse=True)
+            scatter = ax.scatter(
+                data["plate_x"],
+                data["plate_z"],
+                c=pitch_types,
+                s=3,
+                marker="o",
+                cmap="Dark2",
+            )
+            ax.set_title(f"Pitch Locations of {input.selected_pitcher()}")
+            ax.legend(scatter.legend_elements()[0], labels)
 
+    '''
     @output
     @render.plot
     def strike_zone_plot_batter():
@@ -168,6 +159,31 @@ def server(input: Inputs, output: Outputs, session: Session):
         ax.set_title(
             f"Pitch Location of {input.selected_batter()} That Resulted in {input.selected_outcome_batter()}"
         )
+    '''
 
 
 app = App(app_ui, server, debug=True)
+
+
+"""
+    ui.card(
+        ui.row(
+            ui.column(
+                6,
+                ui.input_selectize(
+                    "selected_batter",
+                    "Select batter",
+                    choices=sorted(df["batter_name"].unique().tolist()),
+                ),
+                ui.input_selectize(
+                    "selected_outcome_batter",
+                    "Select pitch outcome",
+                    choices=sorted(df["events"].dropna().unique().tolist()),
+                    multiple=True,
+                ),
+            ),
+            ui.column(6, ui.output_plot("strike_zone_plot_batter")),
+            style="margin-left: 10%; margin-right: 10%; max-width: 80%;",
+        ),
+    ),
+"""
