@@ -23,25 +23,25 @@ app_ui = ui.page_fluid(
                 ui.input_selectize(
                     "selected_pitcher",
                     "Select pitcher",
-                    choices=sorted(df["pitcher_name"].unique().tolist()),
+                    choices=[],
                     multiple=True,
                 ),
                 ui.input_selectize(
-                    "selected_pitcher_opponents",
+                    "selected_batter",
                     "Select batter(s) faced",
                     choices=[],
                     multiple=True,
                 ),
                 ui.input_selectize(
-                    "selected_event_pitcher",
+                    "selected_event",
                     "Select pitch outcome (event)",
-                    choices=sorted(df["events"].dropna().unique().tolist()),
+                    choices=[],
                     multiple=True,
                 ),
                 ui.input_selectize(
-                    "selected_description_pitcher",
+                    "selected_description",
                     "Select pitch outcome (description)",
-                    choices=sorted(df["description"].dropna().unique().tolist()),
+                    choices=[],
                     multiple=True,
                 ),
             ),
@@ -89,26 +89,98 @@ def server(input: Inputs, output: Outputs, session: Session):
         return fig, ax
 
     @reactive.Calc
-    def batters_faced():
-        if input.selected_pitcher():
-            return sorted(
-                df[df["pitcher_name"] == input.selected_pitcher()]["batter_name"]
-                .unique()
-                .tolist()
-            )
+    def pitcher_reactive():
+        filter_conditions = {
+            "batter_name": input.selected_batter(),
+            "events": input.selected_event(),
+            "description": input.selected_description(),
+        }
+        filtered_df = df.copy()
+        for column, selected_values in filter_conditions.items():
+            if selected_values:
+                filtered_df = filtered_df[filtered_df[column].isin(selected_values)]
+        return sorted(filtered_df["pitcher_name"].dropna().unique().tolist())
 
     @reactive.Effect
     def update_pitcher_opponents():
-        ui.update_selectize("selected_pitcher_opponents", choices=batters_faced())
+        ui.update_selectize(
+            "selected_pitcher",
+            choices=pitcher_reactive(),
+            selected=input.selected_pitcher(),
+        )
+
+    @reactive.Calc
+    def batter_reactive():
+        filter_conditions = {
+            "pitcher_name": input.selected_pitcher(),
+            "events": input.selected_event(),
+            "description": input.selected_description(),
+        }
+        filtered_df = df.copy()
+        for column, selected_values in filter_conditions.items():
+            if selected_values:
+                filtered_df = filtered_df[filtered_df[column].isin(selected_values)]
+        return sorted(filtered_df["batter_name"].dropna().unique().tolist())
+
+    @reactive.Effect
+    def update_pitcher_opponents():
+        ui.update_selectize(
+            "selected_batter",
+            choices=batter_reactive(),
+            selected=input.selected_batter(),
+        )
+
+    @reactive.Calc
+    def event_reactive():
+        filter_conditions = {
+            "pitcher_name": input.selected_pitcher(),
+            "batter_name": input.selected_batter(),
+            "description": input.selected_description(),
+        }
+        filtered_df = df.copy()
+        for column, selected_values in filter_conditions.items():
+            if selected_values:
+                filtered_df = filtered_df[filtered_df[column].isin(selected_values)]
+
+        return sorted(filtered_df["events"].dropna().unique().tolist())
+
+    @reactive.Effect
+    def update_events():
+        ui.update_selectize(
+            "selected_event",
+            choices=event_reactive(),
+            selected=input.selected_event(),
+        )
+
+    @reactive.Calc
+    def description_reactive():
+        filter_conditions = {
+            "pitcher_name": input.selected_pitcher(),
+            "batter_name": input.selected_batter(),
+            "events": input.selected_event(),
+        }
+        filtered_df = df.copy()
+        for column, selected_values in filter_conditions.items():
+            if selected_values:
+                filtered_df = filtered_df[filtered_df[column].isin(selected_values)]
+        return sorted(filtered_df["description"].dropna().unique().tolist())
+
+    @reactive.Effect
+    def update_description():
+        ui.update_selectize(
+            "selected_description",
+            choices=description_reactive(),
+            selected=input.selected_description(),
+        )
 
     @reactive.Calc
     def pitcher_pitches_filtered():
         print(df.shape[0])
         filter_criteria = {
             "pitcher_name": input.selected_pitcher(),
-            "batter_name": input.selected_pitcher_opponents(),
-            "events": input.selected_event_pitcher(),
-            "description": input.selected_description_pitcher(),
+            "batter_name": input.selected_batter(),
+            "events": input.selected_event(),
+            "description": input.selected_description(),
         }
         if all(not criteria for criteria in filter_criteria.values()):
             return None
@@ -128,6 +200,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     def strike_zone_plot_pitcher():
         fig, ax = create_strike_zone()
         data = pitcher_pitches_filtered()
+        ax.set_title(f"Pitch Locations")
         if data is None:
             ax.text(0, 4, "Please select a filter", ha='center', va='center')
             return
@@ -143,7 +216,6 @@ def server(input: Inputs, output: Outputs, session: Session):
                 marker="o",
                 cmap="Dark2",
             )
-            ax.set_title(f"Pitch Locations of {input.selected_pitcher()}")
             ax.legend(scatter.legend_elements()[0], labels)
 
     '''
