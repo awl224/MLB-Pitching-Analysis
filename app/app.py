@@ -5,8 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
-import matplotlib.patches as patches
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
 
+import matplotlib.patches as patches
 import pandas as pd
 
 app_ui = ui.page_fluid(
@@ -47,8 +49,9 @@ app_ui = ui.page_fluid(
             ),
             ui.column(6, ui.output_plot("strike_zone_plot_pitcher")),
             style="margin-left: 10%; margin-right: 10%; max-width: 80%;",
-        )
+        ),
     ),
+    ui.card(ui.output_plot("knn_graph")),
 )
 
 
@@ -217,6 +220,11 @@ def server(input: Inputs, output: Outputs, session: Session):
                 cmap="Dark2",
             )
             ax.legend(scatter.legend_elements()[0], labels)
+
+    @output
+    @render.plot
+    def knn_graph():
+        pass
 
     '''
     @output
