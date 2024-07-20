@@ -220,6 +220,8 @@ def server(input: Inputs, output: Outputs, session: Session):
                 cmap="Dark2",
             )
             ax.legend(scatter.legend_elements()[0], labels)
+        num_pitches = len(data)
+        ax.set_title(f"{num_pitches} Pitch Locations")
 
     @output
     @render.plot
