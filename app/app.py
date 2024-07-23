@@ -87,6 +87,7 @@ def server(input: Inputs, output: Outputs, session: Session):
             fill=False,
             color="red",
             linewidth=1,
+            zorder=10,
         )
         ax.add_patch(strike_zone)
         return fig, ax
@@ -218,6 +219,7 @@ def server(input: Inputs, output: Outputs, session: Session):
                 s=3,
                 marker="o",
                 cmap="Dark2",
+                zorder=5,
             )
             ax.legend(scatter.legend_elements()[0], labels)
         num_pitches = len(data)

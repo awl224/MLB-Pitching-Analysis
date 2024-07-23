@@ -3,10 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from app.shared import df
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
+from sklearn.model_selection import (
+    cross_val_score,
+    RepeatedStratifiedKFold,
+)
 from sklearn.tree import DecisionTreeClassifier
-
+from sklearn.neighbors import KNeighborsClassifier
 
 # Multiclass Classification For Blake Snell Pitch Type
 snell_df = df[df["pitcher_name"] == "Snell, Blake"]
@@ -34,13 +36,65 @@ snell_feature_columns = [
     "fld_score",
 ]
 
-# Split data into training and testing sets (80/20 plit)
-X = snell_df[snell_feature_columns]
-y = snell_df["pitch_type"]
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
+# Create df for model results and statistics
+columns = [
+    "model",
+    "accuracy",
+    "precision",
+    "recall",
+    "f1",
+]
+results_df = pd.DataFrame(columns=columns)
 
+
+# Define Models
+
+# Decision Tree Model
+dtree_model = DecisionTreeClassifier()
+
+# KNN
+knn_model = KNeighborsClassifier(n_neighbors=10)
+
+# List of models and names for df
+models = {"Decision Tree": dtree_model, "K Nearest Neighbors": knn_model}
+
+
+# Make classifications
+X = snell_df[snell_feature_columns]  # Feature data
+y = snell_df["pitch_type"]  # Target variable
+
+# 10-fold cross-validation with 5 repeats
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=5, random_state=1)
+# Loop for each model
+for model_name, model in models.items():
+    # Evaluate models
+    accuracy = cross_val_score(model, X, y, scoring="accuracy", cv=cv, n_jobs=-1)
+    precision = cross_val_score(
+        model, X, y, scoring="precision_macro", cv=cv, n_jobs=-1
+    )
+    recall = cross_val_score(model, X, y, scoring="recall_macro", cv=cv, n_jobs=-1)
+    f1 = cross_val_score(model, X, y, scoring="f1_macro", cv=cv, n_jobs=-1)
+    
+    # Store model performance metrics
+    results = {
+        "model": model_name,
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": precision,
+        "f1": f1,
+    }
+    results_df = pd.concat([results_df, pd.DataFrame([results])], ignore_index=True)
+
+# Function to extract model metrics
+def get_model_metric(model_name, metric):
+    if model_name in results_df["model"].values:
+        return results_df.loc[results_df["model"] == model_name, metric].values[0]
+    else:
+        return None
+
+print(np.mean(get_model_metric("Decision Tree", "accuracy")))
+
+"""
 # Zero rule baseline
 most_freq = y_train.mode()
 zero_rule_predictions = [most_freq] * len(y_test)
@@ -63,3 +117,4 @@ dtree_accuracy = accuracy_score(y_test, dtree_predictions)
 dtree_cm = confusion_matrix(y_test, dtree_predictions)
 # print(dtree_cm)
 print(f"Decision tree accuracy = {dtree_accuracy}")
+"""
