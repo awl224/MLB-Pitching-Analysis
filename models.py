@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from app.shared import df
 import pandas as pd
+from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import (
     cross_val_score,
     RepeatedStratifiedKFold,
@@ -49,19 +50,31 @@ results_df = pd.DataFrame(columns=columns)
 
 # Define Models
 
+# Dummy Classifiers for Baseline
+zero_rule = DummyClassifier(strategy="most_frequent")
+random_rate = DummyClassifier(strategy="stratified")
+
 # Decision Tree Model
 dtree_model = DecisionTreeClassifier()
 
 # KNN
-knn_model = KNeighborsClassifier(n_neighbors=10)
+knn_model = KNeighborsClassifier(
+    n_neighbors=9,
+)
 
 # List of models and names for df
-models = {"Decision Tree": dtree_model, "K Nearest Neighbors": knn_model}
+models = {
+    "Zero Rule": zero_rule,
+    "Random Rate": random_rate,
+    "Decision Tree": dtree_model,
+    "K Nearest Neighbors": knn_model,
+}
 
 
 # Make classifications
 X = snell_df[snell_feature_columns]  # Feature data
 y = snell_df["pitch_type"]  # Target variable
+# print(y.dropna().unique().tolist())
 
 # 10-fold cross-validation with 5 repeats
 cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=5, random_state=1)
@@ -74,7 +87,7 @@ for model_name, model in models.items():
     )
     recall = cross_val_score(model, X, y, scoring="recall_macro", cv=cv, n_jobs=-1)
     f1 = cross_val_score(model, X, y, scoring="f1_macro", cv=cv, n_jobs=-1)
-    
+
     # Store model performance metrics
     results = {
         "model": model_name,
@@ -85,6 +98,7 @@ for model_name, model in models.items():
     }
     results_df = pd.concat([results_df, pd.DataFrame([results])], ignore_index=True)
 
+
 # Function to extract model metrics
 def get_model_metric(model_name, metric):
     if model_name in results_df["model"].values:
@@ -92,29 +106,14 @@ def get_model_metric(model_name, metric):
     else:
         return None
 
-print(np.mean(get_model_metric("Decision Tree", "accuracy")))
 
-"""
-# Zero rule baseline
-most_freq = y_train.mode()
-zero_rule_predictions = [most_freq] * len(y_test)
-zero_rule_accuracy = accuracy_score(y_test, zero_rule_predictions)
-print(f"Zero Rule Baseline Accuracy: {zero_rule_accuracy}")
-
-# Random guessing baseline
-class_probabilities = y_train.value_counts(normalize=True)
-random_predictions = np.random.choice(
-    class_probabilities.index, size=len(y_test), p=class_probabilities.values
-)
-random_guess_accuracy = accuracy_score(y_test, random_predictions)
-print(f"Random Guessing Baseline Accuracy: {random_guess_accuracy}")
-
-
-# Decision tree modeling
-dtree_model = DecisionTreeClassifier().fit(X_train, y_train)
-dtree_predictions = dtree_model.predict(X_test)
-dtree_accuracy = accuracy_score(y_test, dtree_predictions)
-dtree_cm = confusion_matrix(y_test, dtree_predictions)
-# print(dtree_cm)
-print(f"Decision tree accuracy = {dtree_accuracy}")
-"""
+# Plot Precision Comparison
+precision_list = [
+    get_model_metric(model_name, "precision") for model_name in models.keys()
+]
+fig, ax = plt.subplots()
+bp = ax.boxplot(precision_list)
+ax.set_xticklabels(models.keys())
+ax.set_ylabel("Precision Score")
+ax.set_title("Precision Scores of Different Models")
+plt.show()
