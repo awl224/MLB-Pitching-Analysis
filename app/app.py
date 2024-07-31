@@ -3,6 +3,7 @@ from shiny import reactive
 from shared import df, batter_df, pitcher_df
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
 from sklearn.neighbors import KNeighborsClassifier
@@ -51,7 +52,12 @@ app_ui = ui.page_fluid(
             style="margin-left: 10%; margin-right: 10%; max-width: 80%;",
         ),
     ),
-    ui.card(ui.output_plot("knn_graph")),
+    ui.card(
+        ui.row(
+            ui.column(6, ui.output_plot("pitch_type_distribution")),
+            ui.column(6, ui.output_plot("pitch_speed_histogram")),
+        )
+    ),
 )
 
 
@@ -206,31 +212,149 @@ def server(input: Inputs, output: Outputs, session: Session):
         data = pitcher_pitches_filtered()
         ax.set_title(f"Pitch Locations")
         if data is None:
-            ax.text(0, 4, "Please select a filter", ha='center', va='center')
+            ax.text(0, 4, "Please select a filter", ha="center", va="center")
             return
         if data.empty:
-            ax.text(0, 4, "No such pitch on record", ha='center', va='center')
-        else:
-            labels, pitch_types = np.unique(data["pitch_type"], return_inverse=True)
-            scatter = ax.scatter(
-                data["plate_x"],
-                data["plate_z"],
-                c=pitch_types,
-                s=3,
-                marker="o",
-                cmap="Dark2",
-                zorder=5,
-            )
-            ax.legend(scatter.legend_elements()[0], labels)
+            ax.text(0, 4, "No data available", ha="center", va="center")
+            return
+
+        labels, pitch_types = np.unique(data["pitch_type"], return_inverse=True)
+        scatter = ax.scatter(
+            data["plate_x"],
+            data["plate_z"],
+            c=pitch_types,
+            s=3,
+            marker="o",
+            cmap="Dark2",
+            zorder=5,
+        )
+        ax.legend(scatter.legend_elements()[0], labels)
         num_pitches = len(data)
         ax.set_title(f"{num_pitches} Pitch Locations")
 
     @output
     @render.plot
-    def knn_graph():
-        pass
+    def pitch_type_distribution():
+        fig, ax = plt.subplots(figsize=(10, 5))
+        data = pitcher_pitches_filtered()
+        ax.set_title("Pitch Type")
 
-    '''
+        if data is None:
+            ax.text(
+                0.5,
+                0.5,
+                "Please select a filter",
+                ha="center",
+                va="center",
+                fontsize=12,
+            )
+            return
+        if data.empty:
+            ax.text(
+                0.5, 0.5, "No data available", ha="center", va="center", fontsize=12
+            )
+            return
+
+        pitch_types = data["pitch_type"].dropna().value_counts()
+        min_colormap_val = pitch_types.values.min()
+        max_colormap_val = pitch_types.values.max()
+        offset = 0.2 * max_colormap_val
+        norm = Normalize(vmin=min_colormap_val - offset, vmax=max_colormap_val)
+        cmap = plt.get_cmap("Blues")
+
+        bars = ax.bar(
+            pitch_types.index, pitch_types.values, color=cmap(norm(pitch_types.values))
+        )
+
+        total = pitch_types.values.sum()
+        for bar in bars:
+            value = bar.get_height()
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                value,
+                f"{value}",
+                ha="center",
+                va="bottom",
+            )
+
+            percent = "%0.0f%%" % (100 * float(value) / total)
+            ax.annotate(
+                percent,
+                xy=(bar.get_x() + bar.get_width() / 2, 0),
+                xycoords="data",
+                xytext=(0, -20),
+                textcoords="offset points",
+                va="top",
+                ha="center",
+                weight="bold",
+                color="black",
+            )
+
+        plt.subplots_adjust(bottom=0.1)
+
+    @output
+    @render.plot
+    def pitch_speed_histogram():
+        fig, ax = plt.subplots(figsize=(10, 5))
+        data = pitcher_pitches_filtered()
+        ax.set_title("Pitch Speed (mph)")
+
+        if data is None:
+            ax.text(
+                0.5,
+                0.5,
+                "Please select a filter",
+                ha="center",
+                va="center",
+                fontsize=12,
+            )
+            return
+        if data.empty:
+            ax.text(
+                0.5, 0.5, "No data available", ha="center", va="center", fontsize=12
+            )
+            return
+
+        release_speeds = data["release_speed"].dropna()
+        counts, bins, patches = ax.hist(
+            release_speeds, bins=10, color="blue", edgecolor="black"
+        )
+
+        min_colormap_val = min(counts)
+        max_colormap_val = max(counts)
+        offset = 0.2 * max_colormap_val
+        norm = Normalize(vmin=min_colormap_val, vmax=max_colormap_val)
+        cmap = plt.get_cmap("YlOrRd")
+        ax.set_xticks(bins)
+
+        total = counts.sum()
+        for count, patch in zip(counts, patches):
+            plt.setp(patch, "facecolor", cmap(norm(count)))
+            ax.text(
+                patch.get_x() + patch.get_width() / 2,
+                count,
+                str(int(count)),
+                ha="center",
+                va="bottom",
+                color="black",
+            )
+
+            percent = "%0.0f%%" % (100 * float(count) / total)
+            ax.annotate(
+                percent,
+                xy=(patch.get_x() + patch.get_width() / 2, 0),
+                xycoords=("data", "axes fraction"),
+                xytext=(0, -20),
+                textcoords="offset points",
+                va="top",
+                ha="center",
+                weight="bold",
+                color="black",
+            )
+
+        plt.subplots_adjust(bottom=0.1)
+
+    """
     @output
     @render.plot
     def strike_zone_plot_batter():
@@ -243,7 +367,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         ax.set_title(
             f"Pitch Location of {input.selected_batter()} That Resulted in {input.selected_outcome_batter()}"
         )
-    '''
+    """
 
 
 app = App(app_ui, server, debug=True)
