@@ -1,6 +1,7 @@
 from shiny import *
 from shiny import reactive
 from shared import df, batter_df, pitcher_df
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
@@ -11,6 +12,8 @@ from sklearn.model_selection import train_test_split
 
 import matplotlib.patches as patches
 import pandas as pd
+
+plots_dir = Path(__file__).parent / "plots"
 
 app_ui = ui.page_fluid(
     ui.panel_title("MLB Statcast Pitch Analysis", "Pitch Analysis"),
@@ -57,6 +60,12 @@ app_ui = ui.page_fluid(
             ui.column(6, ui.output_plot("pitch_type_distribution")),
             ui.column(6, ui.output_plot("pitch_speed_histogram")),
         )
+    ),
+    ui.card(
+        ui.row(
+            ui.column(6, ui.output_image("precision_image")),
+        ),
+        height="600px",
     ),
 )
 
@@ -353,6 +362,11 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
         plt.subplots_adjust(bottom=0.1)
+
+    @render.image
+    def precision_image():
+        img = {"src": str(plots_dir / "precision_score.png"), "width": "100%"}
+        return img
 
     """
     @output
