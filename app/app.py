@@ -15,8 +15,9 @@ import pandas as pd
 
 plots_dir = Path(__file__).parent / "plots"
 
-app_ui = ui.page_fluid(
-    ui.panel_title("MLB Statcast Pitch Analysis", "Pitch Analysis"),
+
+page1 = ui.page_fluid(
+    ui.panel_title("Data & Analytics", "MLB Pitch Analysis"),
     # histogram
     # ui.input_select("var", "Select variable here", choices=list(df.columns)),
     # ui.panel_main(ui.output_plot("plot")),
@@ -61,18 +62,32 @@ app_ui = ui.page_fluid(
             ui.column(6, ui.output_plot("pitch_speed_histogram")),
         )
     ),
-    ui.card(
-        ui.row(
-            ui.column(6, ui.output_image("precision_image")),
-            ui.column(6, ui.output_image("recall_image")),
+)
+
+page2 = ui.page_fillable(
+    ui.panel_title("Blake Snell Pitch Type Prediction", "Pitch Prediction"),
+    ui.layout_columns(
+        ui.card(
+            ui.output_image("precision_image"),
+            fill=True,
+            full_screen=True,
+        ),
+        ui.card(
+            ui.output_image("recall_image"),
+            fill=True,
+            full_screen=True,
         ),
     ),
-    ui.card(
-        ui.row(
-            ui.column(6, ui.output_image("f1_image")),
-            ui.column(6, ui.output_image("accuracy_image")),
-        ),
+    ui.layout_columns(
+        ui.card(ui.output_image("f1_image"), fill=True, full_screen=True),
+        ui.card(ui.output_image("accuracy_image"), fill=True, full_screen=True),
     ),
+)
+
+app_ui = ui.page_navbar(
+    ui.nav_panel("Data & Analytics", page1),
+    ui.nav_panel("Pitch Type Prediction ML", page2),
+    title="2023 MLB Statcast Pitch Analytics",
 )
 
 
@@ -389,44 +404,5 @@ def server(input: Inputs, output: Outputs, session: Session):
         img = {"src": str(plots_dir / "accuracy.png"), "width": "100%"}
         return img
 
-    """
-    @output
-    @render.plot
-    def strike_zone_plot_batter():
-        plt, ax = create_strike_zone()
-        data = df[
-            (df["batter_name"] == input.selected_batter())
-            & (df["events"] == input.selected_outcome_batter())
-        ][["plate_x", "plate_z"]].dropna()
-        ax.scatter(data["plate_x"], data["plate_z"], s=1)
-        ax.set_title(
-            f"Pitch Location of {input.selected_batter()} That Resulted in {input.selected_outcome_batter()}"
-        )
-    """
-
 
 app = App(app_ui, server, debug=True)
-
-
-"""
-    ui.card(
-        ui.row(
-            ui.column(
-                6,
-                ui.input_selectize(
-                    "selected_batter",
-                    "Select batter",
-                    choices=sorted(df["batter_name"].unique().tolist()),
-                ),
-                ui.input_selectize(
-                    "selected_outcome_batter",
-                    "Select pitch outcome",
-                    choices=sorted(df["events"].dropna().unique().tolist()),
-                    multiple=True,
-                ),
-            ),
-            ui.column(6, ui.output_plot("strike_zone_plot_batter")),
-            style="margin-left: 10%; margin-right: 10%; max-width: 80%;",
-        ),
-    ),
-"""
