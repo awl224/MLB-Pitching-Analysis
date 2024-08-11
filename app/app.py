@@ -68,19 +68,25 @@ page2 = ui.page_fillable(
     ui.panel_title("Blake Snell Pitch Type Prediction", "Pitch Prediction"),
     ui.layout_columns(
         ui.card(
-            ui.output_image("precision_image"),
+            ui.output_image("precision_image", height="100%"),
             fill=True,
             full_screen=True,
         ),
         ui.card(
-            ui.output_image("recall_image"),
+            ui.output_image("recall_image", height="100%"),
             fill=True,
             full_screen=True,
         ),
     ),
     ui.layout_columns(
-        ui.card(ui.output_image("f1_image"), fill=True, full_screen=True),
-        ui.card(ui.output_image("accuracy_image"), fill=True, full_screen=True),
+        ui.card(
+            ui.output_image("f1_image", height="100%"), fill=True, full_screen=True
+        ),
+        ui.card(
+            ui.output_image("accuracy_image", height="100%"),
+            fill=True,
+            full_screen=True,
+        ),
     ),
 )
 
