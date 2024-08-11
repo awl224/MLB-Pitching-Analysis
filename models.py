@@ -67,7 +67,7 @@ models = {
     "Zero Rule": zero_rule,
     "Random Rate": random_rate,
     "Decision Tree": dtree_model,
-    "K Nearest Neighbors": knn_model,
+    "kNN": knn_model,
 }
 
 
@@ -93,7 +93,7 @@ for model_name, model in models.items():
         "model": model_name,
         "accuracy": accuracy,
         "precision": precision,
-        "recall": precision,
+        "recall": recall,
         "f1": f1,
     }
     results_df = pd.concat([results_df, pd.DataFrame([results])], ignore_index=True)
@@ -117,4 +117,36 @@ ax.set_xticklabels(models.keys())
 ax.set_ylabel("Precision Score")
 ax.set_title("Precision Scores of Different Models")
 # plt.show()
-plt.savefig("./app/plots/precision_score.png",format='png', dpi=1200)
+plt.savefig("./app/plots/precision_score.png", format="png", dpi=1200)
+
+# Plot Recall Comparison
+recall_list = [get_model_metric(model_name, "recall") for model_name in models.keys()]
+fig, ax = plt.subplots()
+bp = ax.boxplot(recall_list)
+ax.set_xticklabels(models.keys())
+ax.set_ylabel("Recall")
+ax.set_title("Recall of Different Models")
+# plt.show()
+plt.savefig("./app/plots/recall.png", format="png", dpi=1200)
+
+# Plot F1 Comparison
+f1_list = [get_model_metric(model_name, "f1") for model_name in models.keys()]
+fig, ax = plt.subplots()
+bp = ax.boxplot(f1_list)
+ax.set_xticklabels(models.keys())
+ax.set_ylabel("F-Score")
+ax.set_title("F-Score of Different Models")
+# plt.show()
+plt.savefig("./app/plots/f_score.png", format="png", dpi=1200)
+
+# Plot Accuracy Comparison
+accuracy_list = [
+    get_model_metric(model_name, "accuracy") for model_name in models.keys()
+]
+fig, ax = plt.subplots()
+bp = ax.boxplot(accuracy_list)
+ax.set_xticklabels(models.keys())
+ax.set_ylabel("Accuracy")
+ax.set_title("Accuracy of Different Models")
+# plt.show()
+plt.savefig("./app/plots/accuracy.png", format="png", dpi=1200)

@@ -64,8 +64,14 @@ app_ui = ui.page_fluid(
     ui.card(
         ui.row(
             ui.column(6, ui.output_image("precision_image")),
+            ui.column(6, ui.output_image("recall_image")),
         ),
-        height="600px",
+    ),
+    ui.card(
+        ui.row(
+            ui.column(6, ui.output_image("f1_image")),
+            ui.column(6, ui.output_image("accuracy_image")),
+        ),
     ),
 )
 
@@ -366,6 +372,21 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.image
     def precision_image():
         img = {"src": str(plots_dir / "precision_score.png"), "width": "100%"}
+        return img
+
+    @render.image
+    def recall_image():
+        img = {"src": str(plots_dir / "recall.png"), "width": "100%"}
+        return img
+
+    @render.image
+    def f1_image():
+        img = {"src": str(plots_dir / "f_score.png"), "width": "100%"}
+        return img
+
+    @render.image
+    def accuracy_image():
+        img = {"src": str(plots_dir / "accuracy.png"), "width": "100%"}
         return img
 
     """
