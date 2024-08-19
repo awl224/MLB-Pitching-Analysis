@@ -59,7 +59,16 @@ page1 = ui.page_fluid(
     ui.card(
         ui.row(
             ui.column(6, ui.output_plot("pitch_type_distribution")),
-            ui.column(6, ui.output_plot("pitch_speed_histogram")),
+            ui.column(
+                6,
+                ui.output_plot("pitch_speed_histogram"),
+                ui.input_selectize(
+                    "selected_pitch_types",
+                    "Select pitch type",
+                    choices=[],
+                    multiple=True,
+                ),
+            ),
         )
     ),
 )
@@ -148,7 +157,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         return sorted(filtered_df["pitcher_name"].dropna().unique().tolist())
 
     @reactive.Effect
-    def update_pitcher_opponents():
+    def update_pitcher():
         ui.update_selectize(
             "selected_pitcher",
             choices=pitcher_reactive(),
@@ -333,6 +342,9 @@ def server(input: Inputs, output: Outputs, session: Session):
     def pitch_speed_histogram():
         fig, ax = plt.subplots(figsize=(10, 5))
         data = pitcher_pitches_filtered()
+        pitch_type_selected = input.selected_pitch_types()
+        if pitch_type_selected:
+            data = data[data["pitch_type"].isin(pitch_type_selected)]
         ax.set_title("Pitch Speed (mph)")
 
         if data is None:
@@ -389,6 +401,18 @@ def server(input: Inputs, output: Outputs, session: Session):
             )
 
         plt.subplots_adjust(bottom=0.1)
+
+    @reactive.Effect
+    def update_pitch_types():
+        data = pitcher_pitches_filtered()
+        choices_to_set = []
+        if data is not None: 
+            choices_to_set = sorted(pitcher_pitches_filtered()["pitch_type"].dropna().unique().tolist())
+        ui.update_selectize(
+            "selected_pitch_types",
+            choices=choices_to_set,
+            selected=input.selected_pitch_types(),
+        )
 
     @render.image
     def precision_image():
