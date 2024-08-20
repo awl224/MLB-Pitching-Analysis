@@ -3,3 +3,4 @@ shiny
 seaborn
 pandas
 scikit-learn
+sportypy

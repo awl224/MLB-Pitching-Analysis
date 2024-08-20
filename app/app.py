@@ -9,6 +9,7 @@ from matplotlib import colors
 from matplotlib.ticker import PercentFormatter
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
+from sportypy.surfaces.baseball import MLBField
 
 import matplotlib.patches as patches
 import pandas as pd
@@ -26,7 +27,7 @@ page1 = ui.page_fluid(
     ui.card(
         ui.row(
             ui.column(
-                6,
+                4,
                 ui.input_selectize(
                     "selected_pitcher",
                     "Select pitcher",
@@ -52,8 +53,8 @@ page1 = ui.page_fluid(
                     multiple=True,
                 ),
             ),
-            ui.column(6, ui.output_plot("strike_zone_plot_pitcher")),
-            style="margin-left: 10%; margin-right: 10%; max-width: 80%;",
+            ui.column(4, ui.output_plot("strike_zone_plot_pitcher")),
+            ui.column(4, ui.output_plot("hit_location_plot")),
         ),
     ),
     ui.card(
@@ -279,6 +280,79 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     @output
     @render.plot
+    def hit_location_plot():
+        # field = MLBField()
+        field_parameters = {
+            "field_units": "ft",
+
+            "left_field_distance": 355.0,
+            "right_field_distance": 355.0,
+            "center_field_distance": 400.0,
+
+            "baseline_distance": 90.0,
+
+            "running_lane_start_distance": 45.0,
+            "running_lane_depth": 3.0,
+            "running_lane_length": 48.0,
+
+            "pitchers_mound_center_to_home_plate": 46.0,
+            "pitchers_mound_radius": 5.0,
+            "pitchers_plate_front_to_home_plate": 47.0,
+            "pitchers_plate_width": 0.5,
+            "pitchers_plate_length": 2.0,
+
+            "base_side_length": 1.25,
+            "home_plate_edge_length": 1.4167,
+
+            "infield_arc_radius": 95.0,
+            "base_anchor_to_infield_grass_radius": 13.0,
+
+            "line_width": 0.25,
+            "foul_line_to_infield_grass": 3.0,
+            "foul_line_to_foul_grass": 3.0,
+
+            "batters_box_length": 6.0,
+            "batters_box_width": 4.0,
+            "batters_box_y_adj": 0.7083,
+            "home_plate_side_to_batters_box": 0.5,
+            "catchers_box_shape": "trapezoid",
+            "catchers_box_depth": 8.0,
+            "catchers_box_width": 3.5833,
+
+            "backstop_radius": 60.0,
+            "home_plate_circle_radius": 9.0
+        }
+
+        ax = MLBField(field_updates=field_parameters).draw(
+            xlim=(-500.0, 500.0), ylim=(-20.0, 500.0)
+        )
+        data = pitcher_pitches_filtered()
+
+        if data is None:
+            return
+        if data.empty:
+            return
+        data = data.dropna(subset=["hc_x", "hc_y"])
+        if data is None:
+            return
+        if data.empty:
+            return
+        labels, hit_types = np.unique(data["bb_type"], return_inverse=True)
+        scatter = ax.scatter(
+            2 * (data["hc_x"] - 126),
+            2 * (207- data["hc_y"]),
+            c=hit_types,
+            s=3,
+            marker="o",
+            cmap="Dark2",
+            zorder=5,
+        )
+        ax.legend(scatter.legend_elements()[0], labels)
+        num_pitches = len(data)
+        ax.set_title(f"{num_pitches} Hit Locations")
+
+    @output
+    @render.plot
     def pitch_type_distribution():
         fig, ax = plt.subplots(figsize=(10, 5))
         data = pitcher_pitches_filtered()
@@ -406,8 +480,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     def update_pitch_types():
         data = pitcher_pitches_filtered()
         choices_to_set = []
-        if data is not None: 
-            choices_to_set = sorted(pitcher_pitches_filtered()["pitch_type"].dropna().unique().tolist())
+        if data is not None:
+            choices_to_set = sorted(
+                pitcher_pitches_filtered()["pitch_type"].dropna().unique().tolist()
+            )
         ui.update_selectize(
             "selected_pitch_types",
             choices=choices_to_set,
