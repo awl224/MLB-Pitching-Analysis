@@ -78,6 +78,33 @@ page2 = ui.page_fillable(
     ui.panel_title("Blake Snell Pitch Type Prediction", "Pitch Prediction"),
     ui.layout_columns(
         ui.card(
+            ui.card_header("Introduction"),
+            ui.p(
+                "In this analysis, the models attempt to predict the pitch type thrown by MLB pitcher Blake Snell during the 2023 season. Snell threw four different pitch types in 2023 including fastballs (FF), curveballs (CU), sliders (SL), and changeups (CH). Accurately predicting pitch type is a valuable opportunity for game strategy and coaching, allowing teams to better anticipate specific situations and pitches."
+            ),
+            ui.p(
+                "The dataset used includes all information leading up to the pitch, such as the ball-strike count, the inning, the number of outs, the current batter, and runners on base. However, only data available before the pitch is included in the training set, ensuring the model predicts based on the same information available to players and coaches in real-time. Excluding data from after the pitch, such as pitch outcome, speed, and vertical/horizontal break, make sure the models focus only on factors influencing the decision-making process before the pitch is delivered."
+            ),
+            ui.p(
+                "This project highlights the challenges of multiclass classification, where the target variable (pitch type) has more than two possible outcomes. In Snell’s pitches, the dataset is also imbalanced, as he throws certain pitches more than others. This poses a unique challenge for models and makes it important to evaluate performance past just accuracy."
+            ),
+            ui.p(),
+        ),
+        ui.card(
+            ui.card_header("Model Description"),
+            ui.p(
+                "Models used include a Decision Tree classifier and a K-nearest neighbors (KNN) classifier. Two dummy classifiers were included as a baseline: one with a stratified random method and the other with a zero-rule strategy, which consistently predicted the most frequent class."
+            ),
+            ui.p(
+                "To ensure comprehensive performance measurements, the model evaluation process involved five repetitions of 10-fold cross-validation. Cross-validation is a crucial stage since it lowers the possibility of overfitting and can provide a more comprehensive assessment of the model’s abilities. We make sure that our findings are independent of a specific train-test split by repeating cross-validation, which proves a more accurate assessment of performance."
+            ),
+            ui.p(
+                "Multiple performance metrics include accuracy, precision, recall, and F1-score. Although accuracy gives an overall idea of how frequently the model predicts the correct pitch type, imbalanced datasets like this one can make accuracy misleading. As a result, the analysis benefits from precision, recall, and F1-score, which demonstrate the models' ability to classify correctly."
+            ),
+        ),
+    ),
+    ui.layout_columns(
+        ui.card(
             ui.output_image("precision_image", height="100%"),
             fill=True,
             full_screen=True,
@@ -284,33 +311,25 @@ def server(input: Inputs, output: Outputs, session: Session):
         # field = MLBField()
         field_parameters = {
             "field_units": "ft",
-
             "left_field_distance": 355.0,
             "right_field_distance": 355.0,
             "center_field_distance": 400.0,
-
             "baseline_distance": 90.0,
-
             "running_lane_start_distance": 45.0,
             "running_lane_depth": 3.0,
             "running_lane_length": 48.0,
-
             "pitchers_mound_center_to_home_plate": 46.0,
             "pitchers_mound_radius": 5.0,
             "pitchers_plate_front_to_home_plate": 47.0,
             "pitchers_plate_width": 0.5,
             "pitchers_plate_length": 2.0,
-
             "base_side_length": 1.25,
             "home_plate_edge_length": 1.4167,
-
             "infield_arc_radius": 95.0,
             "base_anchor_to_infield_grass_radius": 13.0,
-
             "line_width": 0.25,
             "foul_line_to_infield_grass": 3.0,
             "foul_line_to_foul_grass": 3.0,
-
             "batters_box_length": 6.0,
             "batters_box_width": 4.0,
             "batters_box_y_adj": 0.7083,
@@ -318,9 +337,8 @@ def server(input: Inputs, output: Outputs, session: Session):
             "catchers_box_shape": "trapezoid",
             "catchers_box_depth": 8.0,
             "catchers_box_width": 3.5833,
-
             "backstop_radius": 60.0,
-            "home_plate_circle_radius": 9.0
+            "home_plate_circle_radius": 9.0,
         }
 
         ax = MLBField(field_updates=field_parameters).draw(
@@ -340,7 +358,7 @@ def server(input: Inputs, output: Outputs, session: Session):
         labels, hit_types = np.unique(data["bb_type"], return_inverse=True)
         scatter = ax.scatter(
             2 * (data["hc_x"] - 126),
-            2 * (207- data["hc_y"]),
+            2 * (207 - data["hc_y"]),
             c=hit_types,
             s=3,
             marker="o",
