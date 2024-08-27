@@ -1,14 +1,10 @@
 from shiny import *
 from shiny import reactive
-from shared import df, batter_df, pitcher_df
+from import_data import df
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
-from matplotlib import colors
-from matplotlib.ticker import PercentFormatter
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import train_test_split
 from sportypy.surfaces.baseball import MLBField
 
 import matplotlib.patches as patches
