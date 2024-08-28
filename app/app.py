@@ -1,6 +1,6 @@
 from shiny import *
 from shiny import reactive
-from import_data import df
+from shared import df
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt

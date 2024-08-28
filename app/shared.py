@@ -1,6 +1,5 @@
 from pathlib import Path
 import pandas as pd
-import pandas as pd
 
 # Set up path and load CSV files containing pitch data
 data_dir = Path(__file__).parent / "pitch_data"
