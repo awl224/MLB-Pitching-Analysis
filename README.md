@@ -1,11 +1,11 @@
-# MLB Data Analytics and Machine Learning Dashboard
+# [MLB Data Analytics and Machine Learning Dashboard](https://andrewleaventon.shinyapps.io/mlb-analysis/)
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
 [![Dashboard Preview](./preview.png)](https://andrewleaventon.shinyapps.io/mlb-analysis/)
 
-This project is a [data analytics and machine learning dashboard](https://andrewleaventon.shinyapps.io/mlb-analysis/) for the 2023 MLB season. On the analytics page, users are able to search and view specific pitches based on a number of filters. Vizualization and analytics on the resulting pitches are reactively displayed. The machine learning tab includes performance metrics models attempting to guess the pitch type thrown in the 2023 season. The webpage only includes the performance metrics, however the code for the modeling can be found in ```models.py```
+This project is a data analytics and machine learning dashboard for the 2023 MLB season. On the analytics page, users are able to search and view specific pitches based on a number of filters. Vizualization and analytics on the resulting pitches are reactively displayed. The machine learning tab includes performance metrics models attempting to guess the pitch type thrown in the 2023 season. The webpage only includes the performance metrics, however the code for the modeling can be found in ```models.py```
 
 
 ### Built With
